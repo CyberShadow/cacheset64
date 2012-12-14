@@ -63,9 +63,21 @@ int main()
 	CloseHandle(hToken);
 
 	HMODULE ntdll = LoadLibrary("ntdll.dll");
+	if (!ntdll)
+	{
+		fprintf(stderr, "Can't load ntdll.dll, wrong Windows version?\n");
+		return 1;
+	}
+
 	typedef DWORD NTSTATUS; // ?
 	NTSTATUS (WINAPI *NtSetSystemInformation)(INT, PVOID, ULONG) = (NTSTATUS (WINAPI *)(INT, PVOID, ULONG))GetProcAddress(ntdll, "NtSetSystemInformation");
 	NTSTATUS (WINAPI *NtQuerySystemInformation)(INT, PVOID, ULONG, PULONG) = (NTSTATUS (WINAPI *)(INT, PVOID, ULONG, PULONG))GetProcAddress(ntdll, "NtQuerySystemInformation");
+	if (!NtSetSystemInformation || !NtQuerySystemInformation)
+	{
+		fprintf(stderr, "Can't get function addresses, wrong Windows version?\n");
+		return 1;
+	}
+
 	SYSTEM_CACHE_INFORMATION sci = {0};
 
 	// printf("Struct size = 0x%X\n", sizeof(sci));
@@ -78,8 +90,11 @@ int main()
 		return 1;
 	}
 
-	printf("Current minimum working set size: %Id\n", sci.MinimumWorkingSet*4096);
-	printf("Current maximum working set size: %Id\n", sci.MaximumWorkingSet*4096);
+	sci.MinimumWorkingSet *= 4096;
+	sci.MaximumWorkingSet *= 4096;
+
+	printf("Current minimum working set size: %Id\n", sci.MinimumWorkingSet);
+	printf("Current maximum working set size: %Id\n", sci.MaximumWorkingSet);
 
 	printf("New minimum working set size: "); scanf("%Id", &sci.MinimumWorkingSet);
 	printf("New maximum working set size: "); scanf("%Id", &sci.MaximumWorkingSet);
