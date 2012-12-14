@@ -44,7 +44,7 @@ struct SYSTEM_CACHE_INFORMATION
 	DWORD       Unused[2];
 };
 
-int main()
+int main(int argc, const char** argv)
 {
 	HANDLE hProcess = GetCurrentProcess();
 	HANDLE hToken;
@@ -92,12 +92,21 @@ int main()
 
 	sci.MinimumWorkingSet *= 4096;
 	sci.MaximumWorkingSet *= 4096;
+	printf("  Current minimum working set size: %Id\n", sci.MinimumWorkingSet);
+	printf("  Current maximum working set size: %Id\n", sci.MaximumWorkingSet);
 
-	printf("Current minimum working set size: %Id\n", sci.MinimumWorkingSet);
-	printf("Current maximum working set size: %Id\n", sci.MaximumWorkingSet);
-
-	printf("New minimum working set size: "); scanf("%Id", &sci.MinimumWorkingSet);
-	printf("New maximum working set size: "); scanf("%Id", &sci.MaximumWorkingSet);
+	if (argc == 1)
+	{
+		printf("      New minimum working set size: "); scanf("%Id", &sci.MinimumWorkingSet);
+		printf("      New maximum working set size: "); scanf("%Id", &sci.MaximumWorkingSet);
+	}
+	else
+	{
+		sscanf(argv[          1    ], "%Id", &sci.MinimumWorkingSet);
+		sscanf(argv[argc==2 ? 1 : 2], "%Id", &sci.MaximumWorkingSet);
+		printf("      New minimum working set size: %Id\n", sci.MinimumWorkingSet);
+		printf("      New maximum working set size: %Id\n", sci.MaximumWorkingSet);
+	}
 
 //	sci.MinimumWorkingSet = 0x100000000LU;
 //	sci.MaximumWorkingSet = 0x400000000LU;
@@ -108,6 +117,18 @@ int main()
 		fprintf(stderr, "NtSetSystemInformation error %08X\n", dwStatus);
 		return 1;
 	}
+
+	dwStatus = NtQuerySystemInformation(SYSTEMCACHEINFORMATION, &sci, sizeof(sci), &dwRead);
+	if (dwStatus != 0)
+	{
+		fprintf(stderr, "NtQuerySystemInformation error %08X\n", dwStatus);
+		return 1;
+	}
+
+	sci.MinimumWorkingSet *= 4096;
+	sci.MaximumWorkingSet *= 4096;
+	printf("Resulting minimum working set size: %Id\n", sci.MinimumWorkingSet);
+	printf("Resulting maximum working set size: %Id\n", sci.MaximumWorkingSet);
 
 	return 0;
 }
